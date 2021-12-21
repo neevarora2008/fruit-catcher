@@ -1,48 +1,105 @@
-var database;
-var back_img;
-var gameState =0;
-var playerCount = 0;
-var allPlayers;
-var score =0;
-var player, form,game;
-var player1,player2;
-var players;
-var fruits;
-var fruitGroup;
-var fruit1_img, fruit2_img, fruit3_img, fruit4_img, fruit5_img;
-var player_img;
-var player1score =0;
-var player2score =0;
+//Create variables here
+var dog, sadDog, happyDog,garden, washroom, database
+var food, foodStock
+var fedtime, lastFed, currentTime
+var feed, addFood
+var foodObj
+var gameState, readState
 
-function preload(){
-  back_img = loadImage("images/jungle.jpg");
-  player_img = loadImage("images/basket2.png");
-  fruit1_img = loadImage("images/apple2.png");
-  fruit2_img = loadImage("images/banana2.png");
-  fruit3_img = loadImage("images/melon2.png");
-  fruit4_img = loadImage("images/orange2.png");
-  fruit5_img = loadImage("images/pineapple2.png");
-  fruitGroup = new Group();
+function preload()
+{
+	//load images here
+  sadDog = loadImage("images/dog.png")
+  happyDog = loadImage("images/happydog.png")
+  garden = loadImage("images/Garden.png")
+  washroom = loadImage("images/washroom.png")
+  bedroom = loadImage("images/bedroom.png")
 }
+
 function setup() {
-  createCanvas(1000, 600);
-  database = firebase.database();
-  game = new Game();
-  game.getState();
-  game.start();
+	createCanvas(800, 700);
+  database = firebase.database()
+  foodObj = new Food()
+  foodStock = database.ref("Food")
+  foodStock.on("value".readStock)
+  fedTime= database.ref("feedtime")
+  feedtime.on("value",function(data){
+    lastFed = data.val()
+  })
+    dog = createSprite(200,400,150,150)
+    dog.addImage(sadDog)
+    dog.scale = 0.5
+
+    feed = createSprite("feedthedog")
+    feed.position(700,95)
+    feed.mousePressed(feedDog)
+
+  addFood = createButton("addFood")
+  addFood.position(800,95)
+  addFood.mousePressed(addFoods)
+  
+  
   
 }
 
-function draw() {
-  background(back_img);
-  if (gameState === 1) {
-    clear(); 
-    game.play();
-  }
-  if (gameState === 2) {
-    game.end();
-  }
-  if (playerCount === 2) {
-    game.update(1);
-  }
+
+function draw() {  
+
+currentTime = hour()
+if(currentTime == (lastFed+1)){
+  update("playing")
+  foodObj.garden()
+}
+else if(currentTime==(lastFed+2)){
+  update("sleeping")
+  foodObj.bedroom()
+
+}
+else if (currentTime > (lastFed+2) && currentTime<=(lastFed+4)){
+  update("bathing")
+  foodObj.washroom()
+}
+else{
+  update("hungry")
+  foodObj.display()
+}
+if (gameState != "hungry"){
+  feed.hide()
+  addFood.hide()
+  dog.remove()
+}
+else{
+  feed.show()
+  addFood.show()
+  dog.addImage("sadDog")
+}
+  drawSprites();
+  //add styles here
+
+}
+function readStock(data){
+  foodS = data.val()
+  foodObj.updatefoodStock(foodS)
+}
+
+function feedDog(){
+  dog.addImage(happyDog)
+  foodObj.updatefoodStock(foodObj.getFoodStock()-1)
+  database.ref("/").update({
+    food:foodObj. getFoodStock(),
+    foodTime:hour(),
+    foodState:"hungry"
+
+  })
+}
+function addFood(){
+  foodS++
+  database.ref("/").update({
+    food:foodS
+  })
+}
+function update(state){
+  database.ref("/").update({
+    gamestate:state
+  })
 }
